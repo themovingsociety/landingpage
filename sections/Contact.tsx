@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useInView } from "@/hooks/useInView";
 import type { ContactContent } from "@/types/cms";
+import { contactFormSchema, type ContactFormData } from "@/lib/contact-schema";
 
 function TitleWithFade({ title }: { title: string }) {
   const { ref, isInView } = useInView();
@@ -41,26 +42,134 @@ interface ContactProps {
 }
 
 export default function Contact({ content }: ContactProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ContactFormData>({
+    name: "",
     email: "",
-    fullName: "",
-    location: "",
+    country: "",
+    sports: "",
+    hobbiesAndInterests: "",
+    business: "",
+    lastTrips: "",
     comments: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Aquí se manejaría el envío del formulario
-    console.log("Form submitted:", formData);
-  };
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof ContactFormData, string>>
+  >({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{
+    type: "success" | "error" | null;
+    message: string;
+  }>({ type: null, message: "" });
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    // Limpiar el error del campo cuando el usuario empiece a escribir
+    if (errors[name as keyof ContactFormData]) {
+      setErrors({
+        ...errors,
+        [name]: undefined,
+      });
+    }
+    // Limpiar el estado de envío cuando el usuario modifique el formulario
+    if (submitStatus.type) {
+      setSubmitStatus({ type: null, message: "" });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    setSubmitStatus({ type: null, message: "" });
+
+    // Validar con Zod
+    const validationResult = contactFormSchema.safeParse(formData);
+
+    if (!validationResult.success) {
+      const fieldErrors: Partial<Record<keyof ContactFormData, string>> = {};
+      for (const err of validationResult.error.issues) {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as keyof ContactFormData] = err.message;
+        }
+      }
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Web3Forms access key - debe estar en .env.local como NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY
+      const accessKey = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY;
+
+      if (!accessKey) {
+        throw new Error(
+          "Web3Forms is not configured. Please contact the administrator."
+        );
+      }
+
+      // Preparar los datos para Web3Forms
+      const web3FormData = new FormData();
+      web3FormData.append("access_key", accessKey);
+      web3FormData.append("subject", `Request Access - ${formData.name}`);
+      web3FormData.append("from_name", formData.name);
+      web3FormData.append("email", formData.email);
+      web3FormData.append("name", formData.name);
+      web3FormData.append("country", formData.country);
+      web3FormData.append("sports", formData.sports);
+      web3FormData.append(
+        "hobbies_and_interests",
+        formData.hobbiesAndInterests
+      );
+      web3FormData.append("business", formData.business);
+      web3FormData.append("last_trips", formData.lastTrips);
+      web3FormData.append("comments", formData.comments);
+
+      // Enviar directamente a Web3Forms desde el cliente
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: web3FormData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to send email");
+      }
+
+      setSubmitStatus({
+        type: "success",
+        message: "Your request has been sent successfully!",
+      });
+
+      // Limpiar el formulario
+      setFormData({
+        name: "",
+        email: "",
+        country: "",
+        sports: "",
+        hobbiesAndInterests: "",
+        business: "",
+        lastTrips: "",
+        comments: "",
+      });
+    } catch (error) {
+      setSubmitStatus({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "An error occurred. Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -85,48 +194,185 @@ export default function Contact({ content }: ContactProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6 mb-12">
-          <input
-            type="email"
-            name="email"
-            placeholder="Your Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full px-4 py-3 bg-white border border-[#D9D9D9] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors font-antic"
-            required
-          />
-          <input
-            type="text"
-            name="fullName"
-            placeholder="Your Full Name"
-            value={formData.fullName}
-            onChange={handleChange}
-            className="w-full px-4 py-3 bg-white border border-[#D9D9D9] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors font-antic"
-            required
-          />
-          <input
-            type="text"
-            name="location"
-            placeholder="Where you are from"
-            value={formData.location}
-            onChange={handleChange}
-            className="w-full px-4 py-3 bg-white border border-[#D9D9D9] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors font-antic"
-            required
-          />
-          <textarea
-            name="comments"
-            placeholder="Your comments"
-            value={formData.comments}
-            onChange={handleChange}
-            rows={4}
-            className="w-full px-4 py-3 bg-white border border-[#D9D9D9] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors resize-none font-antic"
-            required
-          />
+          <div>
+            <input
+              type="text"
+              name="name"
+              placeholder="Name"
+              value={formData.name}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 bg-white border ${
+                errors.name
+                  ? "border-red-500"
+                  : "border-[#D9D9D9] focus:border-gray-900"
+              } text-gray-900 placeholder-gray-500 focus:outline-none transition-colors font-antic`}
+            />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-500 font-antic">
+                {errors.name}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 bg-white border ${
+                errors.email
+                  ? "border-red-500"
+                  : "border-[#D9D9D9] focus:border-gray-900"
+              } text-gray-900 placeholder-gray-500 focus:outline-none transition-colors font-antic`}
+            />
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-500 font-antic">
+                {errors.email}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="text"
+              name="country"
+              placeholder="Country"
+              value={formData.country}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 bg-white border ${
+                errors.country
+                  ? "border-red-500"
+                  : "border-[#D9D9D9] focus:border-gray-900"
+              } text-gray-900 placeholder-gray-500 focus:outline-none transition-colors font-antic`}
+            />
+            {errors.country && (
+              <p className="mt-1 text-sm text-red-500 font-antic">
+                {errors.country}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="text"
+              name="sports"
+              placeholder="Sports"
+              value={formData.sports}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 bg-white border ${
+                errors.sports
+                  ? "border-red-500"
+                  : "border-[#D9D9D9] focus:border-gray-900"
+              } text-gray-900 placeholder-gray-500 focus:outline-none transition-colors font-antic`}
+            />
+            {errors.sports && (
+              <p className="mt-1 text-sm text-red-500 font-antic">
+                {errors.sports}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="text"
+              name="hobbiesAndInterests"
+              placeholder="Hobbies and interests"
+              value={formData.hobbiesAndInterests}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 bg-white border ${
+                errors.hobbiesAndInterests
+                  ? "border-red-500"
+                  : "border-[#D9D9D9] focus:border-gray-900"
+              } text-gray-900 placeholder-gray-500 focus:outline-none transition-colors font-antic`}
+            />
+            {errors.hobbiesAndInterests && (
+              <p className="mt-1 text-sm text-red-500 font-antic">
+                {errors.hobbiesAndInterests}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="text"
+              name="business"
+              placeholder="Business"
+              value={formData.business}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 bg-white border ${
+                errors.business
+                  ? "border-red-500"
+                  : "border-[#D9D9D9] focus:border-gray-900"
+              } text-gray-900 placeholder-gray-500 focus:outline-none transition-colors font-antic`}
+            />
+            {errors.business && (
+              <p className="mt-1 text-sm text-red-500 font-antic">
+                {errors.business}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="text"
+              name="lastTrips"
+              placeholder="Last trips"
+              value={formData.lastTrips}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 bg-white border ${
+                errors.lastTrips
+                  ? "border-red-500"
+                  : "border-[#D9D9D9] focus:border-gray-900"
+              } text-gray-900 placeholder-gray-500 focus:outline-none transition-colors font-antic`}
+            />
+            {errors.lastTrips && (
+              <p className="mt-1 text-sm text-red-500 font-antic">
+                {errors.lastTrips}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <textarea
+              name="comments"
+              placeholder="Your comments"
+              value={formData.comments}
+              onChange={handleChange}
+              rows={4}
+              className={`w-full px-4 py-3 bg-white border ${
+                errors.comments
+                  ? "border-red-500"
+                  : "border-[#D9D9D9] focus:border-gray-900"
+              } text-gray-900 placeholder-gray-500 focus:outline-none transition-colors resize-none font-antic`}
+            />
+            {errors.comments && (
+              <p className="mt-1 text-sm text-red-500 font-antic">
+                {errors.comments}
+              </p>
+            )}
+          </div>
+
+          {submitStatus.type && (
+            <div
+              className={`p-3 text-center font-antic ${
+                submitStatus.type === "success"
+                  ? "text-green-700 bg-green-50 border border-green-200"
+                  : "text-red-700 bg-red-50 border border-red-200"
+              }`}
+            >
+              {submitStatus.message}
+            </div>
+          )}
+
           <div className="flex justify-center">
             <button
               type="submit"
-              className="px-8 py-3 bg-white border border-[#000000] text-gray-900 hover:bg-[#9F8C5A] hover:text-white transition-all duration-200 font-antic"
+              disabled={isSubmitting}
+              className="px-8 py-3 bg-white border border-[#000000] text-gray-900 hover:bg-[#9F8C5A] hover:text-white transition-all duration-200 font-antic disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Send
+              {isSubmitting ? "Sending..." : "Send"}
             </button>
           </div>
         </form>
