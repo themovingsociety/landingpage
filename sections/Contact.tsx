@@ -91,7 +91,7 @@ export default function Contact({ content }: ContactProps) {
             placeholder="Your Email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 bg-white border border-[#9F8C5A] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors font-antic"
+            className="w-full px-4 py-3 bg-white border border-[#D9D9D9] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors font-antic"
             required
           />
           <input
@@ -100,7 +100,7 @@ export default function Contact({ content }: ContactProps) {
             placeholder="Your Full Name"
             value={formData.fullName}
             onChange={handleChange}
-            className="w-full px-4 py-3 bg-white border border-[#9F8C5A] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors font-antic"
+            className="w-full px-4 py-3 bg-white border border-[#D9D9D9] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors font-antic"
             required
           />
           <input
@@ -109,7 +109,7 @@ export default function Contact({ content }: ContactProps) {
             placeholder="Where you are from"
             value={formData.location}
             onChange={handleChange}
-            className="w-full px-4 py-3 bg-white border border-[#9F8C5A] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors font-antic"
+            className="w-full px-4 py-3 bg-white border border-[#D9D9D9] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors font-antic"
             required
           />
           <textarea
@@ -118,13 +118,13 @@ export default function Contact({ content }: ContactProps) {
             value={formData.comments}
             onChange={handleChange}
             rows={4}
-            className="w-full px-4 py-3 bg-white border border-[#9F8C5A] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors resize-none font-antic"
+            className="w-full px-4 py-3 bg-white border border-[#D9D9D9] text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-900 transition-colors resize-none font-antic"
             required
           />
           <div className="flex justify-center">
             <button
               type="submit"
-              className="px-8 py-3 bg-white border border-[#9F8C5A] text-gray-900 hover:bg-[#9F8C5A] hover:text-white transition-all duration-200 font-antic"
+              className="px-8 py-3 bg-white border border-[#000000] text-gray-900 hover:bg-[#9F8C5A] hover:text-white transition-all duration-200 font-antic"
             >
               Send
             </button>

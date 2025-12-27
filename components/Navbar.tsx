@@ -50,12 +50,25 @@ export default function Navbar({
           {/* Logo - Centered */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <a href="/" className="text-3xl font-antic text-gray-900">
-              {logo.split("MOVING").map((part, index) => (
-                <span key={index}>
-                  {part}
-                  {index === 0 && <span className="font-semibold">MOVING</span>}
-                </span>
-              ))}
+              {logo.split("MOVING").map((part, index) => {
+                if (index === 0) {
+                  return (
+                    <span key={index}>
+                      {part}
+                      <span className="font-semibold">MOVING</span>
+                    </span>
+                  );
+                } else {
+                  // Dividir la parte después de MOVING para separar el punto
+                  const parts = part.split(".");
+                  return (
+                    <span key={index}>
+                      {parts[0]}
+                      <span className="text-[#9F8C5A]">.</span>
+                    </span>
+                  );
+                }
+              })}
             </a>
           </div>
 
