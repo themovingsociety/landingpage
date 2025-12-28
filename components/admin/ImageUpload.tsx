@@ -5,7 +5,9 @@ import { useState } from "react";
 interface ImageUploadProps {
   value: string;
   onChange: (url: string) => void;
-  onUploadSuccess?: () => void;
+  setToast: (
+    toast: { message: string; type: "success" | "error" } | null
+  ) => void;
   label?: string;
   accept?: string;
   className?: string;
@@ -14,7 +16,7 @@ interface ImageUploadProps {
 export default function ImageUpload({
   value,
   onChange,
-  onUploadSuccess,
+  setToast,
   label = "Imagen/Video",
   accept = "image/*,video/*",
   className = "",
@@ -26,38 +28,80 @@ export default function ImageUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const maxSize = file.type.startsWith("video/")
+      ? 100 * 1024 * 1024
+      : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const maxSizeMB = maxSize / (1024 * 1024);
+      setError(
+        `El archivo es demasiado grande. Tamaño máximo: ${maxSizeMB} MB`
+      );
+      return;
+    }
+
     setUploading(true);
     setError("");
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
       const editToken = localStorage.getItem("content_edit_token");
-      const headers: HeadersInit = {};
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
 
       if (editToken) {
         headers.Authorization = `Bearer ${editToken}`;
       }
 
-      const response = await fetch("/api/upload", {
+      const signatureResponse = await fetch("/api/upload/signature", {
         method: "POST",
         headers,
-        body: formData,
+        body: JSON.stringify({
+          timestamp: Math.round(new Date().getTime() / 1000),
+          folder: "landing-page",
+        }),
       });
 
-      const result = await response.json();
+      const signatureData = await signatureResponse.json();
 
-      if (result.success) {
-        onChange(result.url);
-        if (onUploadSuccess) {
-          onUploadSuccess();
-        }
-      } else {
-        setError(result.error || "Error al subir el archivo");
+      if (!signatureData.signature) {
+        throw new Error("No se pudo obtener la firma de upload");
       }
+
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+      uploadFormData.append("api_key", signatureData.apiKey);
+      uploadFormData.append("timestamp", signatureData.timestamp.toString());
+      uploadFormData.append("signature", signatureData.signature);
+      uploadFormData.append("folder", "landing-page");
+      uploadFormData.append("resource_type", "auto");
+
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/auto/upload`;
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(
+          errorData.error?.message || "Error al subir el archivo"
+        );
+      }
+
+      const uploadResult = await uploadResponse.json();
+
+      onChange(uploadResult.secure_url);
+      setToast({
+        message: "Archivo subido correctamente",
+        type: "success",
+      });
     } catch (err) {
-      setError("Error al subir el archivo. Por favor, intenta de nuevo.");
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Error al subir el archivo. Por favor, intenta de nuevo.";
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }

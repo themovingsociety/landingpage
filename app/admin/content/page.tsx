@@ -254,12 +254,7 @@ export default function ContentAdminPage() {
                 <HeroEditor
                   content={content as HeroContent}
                   updateContent={updateContent}
-                  onUploadSuccess={() => {
-                    setToast({
-                      message: "Archivo subido correctamente",
-                      type: "success",
-                    });
-                  }}
+                  setToast={setToast}
                 />
               )}
 
@@ -268,12 +263,7 @@ export default function ContentAdminPage() {
                   content={content as PortfolioContent}
                   updateContent={updateContent}
                   updateItem={updatePortfolioItem}
-                  onUploadSuccess={() => {
-                    setToast({
-                      message: "Imagen subida correctamente",
-                      type: "success",
-                    });
-                  }}
+                  setToast={setToast}
                 />
               )}
 
@@ -295,7 +285,7 @@ export default function ContentAdminPage() {
           )}
         </div>
       </div>
-      
+
       {toast && (
         <Toast
           message={toast.message}
@@ -311,11 +301,13 @@ export default function ContentAdminPage() {
 function HeroEditor({
   content,
   updateContent,
-  onUploadSuccess,
+  setToast,
 }: {
   content: HeroContent;
   updateContent: (field: string, value: any) => void;
-  onUploadSuccess?: () => void;
+  setToast: (
+    toast: { message: string; type: "success" | "error" } | null
+  ) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -367,7 +359,7 @@ function HeroEditor({
                     newImages[index] = url;
                     updateContent("images", newImages);
                   }}
-                  onUploadSuccess={onUploadSuccess}
+                  setToast={setToast}
                   label={`Video/Imagen ${index + 1}`}
                 />
               </div>
@@ -395,12 +387,14 @@ function PortfolioEditor({
   content,
   updateContent,
   updateItem,
-  onUploadSuccess,
+  setToast,
 }: {
   content: PortfolioContent;
   updateContent: (field: string, value: any) => void;
   updateItem: (index: number, field: string, value: any) => void;
-  onUploadSuccess?: () => void;
+  setToast: (
+    toast: { message: string; type: "success" | "error" } | null
+  ) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -457,7 +451,7 @@ function PortfolioEditor({
                 <ImageUpload
                   value={item.image}
                   onChange={(url) => updateItem(index, "image", url)}
-                  onUploadSuccess={onUploadSuccess}
+                  setToast={setToast}
                   label="Imagen"
                   className="mb-2"
                 />
