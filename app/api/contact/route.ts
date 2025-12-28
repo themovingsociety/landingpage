@@ -33,8 +33,6 @@ export async function POST(request: NextRequest) {
         const accessKey = process.env.WEB3FORMS_ACCESS_KEY?.trim();
 
         if (!accessKey) {
-            console.error("Missing WEB3FORMS_ACCESS_KEY environment variable");
-            console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes('WEB3')));
             return NextResponse.json(
                 {
                     error: "Server configuration error",
@@ -43,9 +41,6 @@ export async function POST(request: NextRequest) {
                 { status: 500 }
             );
         }
-
-        // Log para debugging (solo primeros caracteres por seguridad)
-        console.log("Using Web3Forms access key:", accessKey.substring(0, 8) + "...");
 
         // Configurar el email HTML para Web3Forms
         const htmlContent = `
@@ -93,15 +88,11 @@ export async function POST(request: NextRequest) {
         if (contentType && contentType.includes("application/json")) {
             result = await response.json();
         } else {
-            // Si no es JSON, obtener el texto para debugging
             const text = await response.text();
-            console.error("Web3Forms returned non-JSON response:", text.substring(0, 500));
 
-            // Si es un error 403, dar más información
             if (response.status === 403) {
-                console.error("Web3Forms 403 Error - Access Key used:", accessKey.substring(0, 8) + "...");
                 throw new Error(
-                    `Web3Forms API returned 403 Forbidden. Please verify your access key is correct and active. Check your .env.local file and ensure WEB3FORMS_ACCESS_KEY is set correctly.`
+                    `Web3Forms API returned 403 Forbidden. Please verify your access key is correct and active.`
                 );
             }
 
@@ -111,7 +102,6 @@ export async function POST(request: NextRequest) {
         }
 
         if (!response.ok || !result.success) {
-            console.error("Web3Forms error response:", result);
             throw new Error(result.message || "Failed to send email via Web3Forms");
         }
 
@@ -123,7 +113,6 @@ export async function POST(request: NextRequest) {
             { status: 200 }
         );
     } catch (error) {
-        console.error("Error sending email:", error);
 
         if (error instanceof Error) {
             return NextResponse.json(

@@ -1,8 +1,11 @@
-// Contenido por defecto (mock data)
-// Cuando se integre el CMS, esto se reemplazará con llamadas a la API
+// Sistema de contenido basado en archivos JSON editables
+// Los archivos JSON se pueden editar y trigger redeploy automático
 
-import type { SiteContent } from '@/types/cms';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
+import type { SiteContent, HeroContent, PortfolioContent, ContactContent } from '@/types/cms';
 
+// Contenido por defecto (fallback si no se pueden leer los JSONs)
 export const defaultContent: SiteContent = {
   hero: {
     title: 'Where\nElegance Moves\nin constant motion.',
@@ -69,10 +72,35 @@ export const defaultContent: SiteContent = {
   },
 };
 
-// Función helper para obtener contenido (preparada para CMS)
+// Función helper para leer archivos JSON
+async function readJsonFile<T>(filename: string): Promise<T | null> {
+  try {
+    const filePath = join(process.cwd(), 'content', filename);
+    const fileContents = await readFile(filePath, 'utf-8');
+    return JSON.parse(fileContents) as T;
+  } catch (error) {
+    console.error(`Error reading ${filename}:`, error);
+    return null;
+  }
+}
+
+// Función principal para obtener contenido desde archivos JSON
 export async function getContent(): Promise<SiteContent> {
-  // Por ahora retorna contenido por defecto
-  // Aquí se hará la llamada al CMS cuando esté listo
-  return defaultContent;
+  try {
+    const [hero, portfolio, contact] = await Promise.all([
+      readJsonFile<HeroContent>('hero.json'),
+      readJsonFile<PortfolioContent>('portfolio.json'),
+      readJsonFile<ContactContent>('contact.json'),
+    ]);
+
+    return {
+      hero: hero || defaultContent.hero,
+      portfolio: portfolio || defaultContent.portfolio,
+      contact: contact || defaultContent.contact,
+    };
+  } catch (error) {
+    console.error('Error loading content:', error);
+    return defaultContent;
+  }
 }
 
