@@ -97,8 +97,8 @@ export async function getContent(): Promise<SiteContent> {
         getContentFromKV<ContactContent>('contact'),
       ]);
 
-      // Si tenemos contenido en KV, usarlo
-      if (heroKV || portfolioKV || contactKV) {
+
+      if (heroKV !== null || portfolioKV !== null || contactKV !== null) {
         return {
           hero: heroKV || defaultContent.hero,
           portfolio: portfolioKV || defaultContent.portfolio,

@@ -5,6 +5,10 @@ import Navbar from "@/components/Navbar";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getContent } from "@/lib/content";
 
+// Forzar renderizado dinámico para que siempre lea desde KV
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function Home() {
   const content = await getContent();
 
