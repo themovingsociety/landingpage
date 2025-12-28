@@ -120,7 +120,14 @@ export default function ContentAdminPage() {
           localStorage.setItem("content_edit_token", editToken);
         }
       } else {
-        setMessage({ type: "error", text: result.error || "Error al guardar" });
+        // Manejar errores específicos
+        let errorMessage = result.error || "Error al guardar";
+
+        if (result.requiresRedeploy) {
+          errorMessage += " Los cambios se aplicarán después del redeploy.";
+        }
+
+        setMessage({ type: "error", text: errorMessage });
       }
     } catch (error) {
       setMessage({ type: "error", text: "Error al guardar contenido" });

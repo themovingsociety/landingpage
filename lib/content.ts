@@ -1,9 +1,10 @@
-// Sistema de contenido basado en archivos JSON editables
-// Los archivos JSON se pueden editar y trigger redeploy automático
+// Sistema de contenido basado en Vercel KV con fallback a archivos JSON
+// Prioriza Vercel KV para persistencia en producción, usa archivos JSON como fallback
 
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import type { SiteContent, HeroContent, PortfolioContent, ContactContent } from '@/types/cms';
+import { getContentFromKV, isKVConfigured } from './kv';
 
 // Contenido por defecto (fallback si no se pueden leer los JSONs)
 export const defaultContent: SiteContent = {
@@ -84,9 +85,29 @@ async function readJsonFile<T>(filename: string): Promise<T | null> {
   }
 }
 
-// Función principal para obtener contenido desde archivos JSON
+// Función principal para obtener contenido
+// Prioriza Vercel KV, luego archivos JSON, finalmente contenido por defecto
 export async function getContent(): Promise<SiteContent> {
   try {
+    // Intentar obtener desde KV si está configurado
+    if (isKVConfigured()) {
+      const [heroKV, portfolioKV, contactKV] = await Promise.all([
+        getContentFromKV<HeroContent>('hero'),
+        getContentFromKV<PortfolioContent>('portfolio'),
+        getContentFromKV<ContactContent>('contact'),
+      ]);
+
+      // Si tenemos contenido en KV, usarlo
+      if (heroKV || portfolioKV || contactKV) {
+        return {
+          hero: heroKV || defaultContent.hero,
+          portfolio: portfolioKV || defaultContent.portfolio,
+          contact: contactKV || defaultContent.contact,
+        };
+      }
+    }
+
+    // Fallback a archivos JSON
     const [hero, portfolio, contact] = await Promise.all([
       readJsonFile<HeroContent>('hero.json'),
       readJsonFile<PortfolioContent>('portfolio.json'),
@@ -99,7 +120,6 @@ export async function getContent(): Promise<SiteContent> {
       contact: contact || defaultContent.contact,
     };
   } catch (error) {
-    console.error('Error loading content:', error);
     return defaultContent;
   }
 }
