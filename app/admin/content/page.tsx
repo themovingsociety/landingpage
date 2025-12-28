@@ -6,6 +6,7 @@ import type {
   PortfolioContent,
   ContactContent,
 } from "@/types/cms";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 type SectionType = "hero" | "portfolio" | "contact";
 
@@ -37,7 +38,6 @@ export default function ContentAdminPage() {
 
       setIsDevelopment(result.isDevelopment || false);
 
-      // Solo en desarrollo, si el token está configurado, no requiere auth manual
       if (
         result.isDevelopment &&
         result.tokenConfigured &&
@@ -315,19 +315,46 @@ function HeroEditor({
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Imágenes/Videos (una por línea)
+          Imágenes/Videos
         </label>
-        <textarea
-          value={content.images?.join("\n") || ""}
-          onChange={(e) =>
-            updateContent(
-              "images",
-              e.target.value.split("\n").filter((line) => line.trim())
-            )
-          }
-          className="w-full px-4 py-2 border border-gray-300 rounded-md"
-          rows={3}
-        />
+        <div className="space-y-3">
+          {content.images?.map((image, index) => (
+            <div key={index} className="flex items-start gap-2">
+              <div className="flex-1">
+                <ImageUpload
+                  value={image}
+                  onChange={(url) => {
+                    const newImages = [...(content.images || [])];
+                    newImages[index] = url;
+                    updateContent("images", newImages);
+                  }}
+                  label={`Imagen ${index + 1}`}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const newImages =
+                    content.images?.filter((_, i) => i !== index) || [];
+                  updateContent("images", newImages);
+                }}
+                className="mt-7 text-red-600 hover:text-red-700 text-sm"
+              >
+                Eliminar
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              const newImages = [...(content.images || []), ""];
+              updateContent("images", newImages);
+            }}
+            className="text-blue-600 hover:text-blue-700 text-sm"
+          >
+            + Agregar imagen/video
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -395,12 +422,11 @@ function PortfolioEditor({
                   }
                   className="w-full px-3 py-1 border border-gray-300 rounded-md text-sm"
                 />
-                <input
-                  type="text"
-                  placeholder="Imagen (ruta)"
+                <ImageUpload
                   value={item.image}
-                  onChange={(e) => updateItem(index, "image", e.target.value)}
-                  className="w-full px-3 py-1 border border-gray-300 rounded-md text-sm"
+                  onChange={(url) => updateItem(index, "image", url)}
+                  label="Imagen"
+                  className="mb-2"
                 />
                 <input
                   type="text"
