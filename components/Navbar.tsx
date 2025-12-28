@@ -49,17 +49,19 @@ export default function Navbar({
 
           {/* Logo - Centered */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
-            <a href="/" className="text-3xl font-antic text-gray-900">
+            <a
+              href="/"
+              className="sm:text-base md:text-3xl font-antic text-gray-900"
+            >
               {logo.split("MOVING").map((part, index) => {
                 if (index === 0) {
                   return (
                     <span key={index}>
                       {part}
-                      <span className="font-semibold">MOVING</span>
+                      <span className="font-semibold">Moving</span>
                     </span>
                   );
                 } else {
-                  // Dividir la parte después de MOVING para separar el punto
                   const parts = part.split(".");
                   return (
                     <span key={index}>
