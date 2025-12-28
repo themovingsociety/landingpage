@@ -7,6 +7,7 @@ import type {
   ContactContent,
 } from "@/types/cms";
 import ImageUpload from "@/components/admin/ImageUpload";
+import Toast from "@/components/admin/Toast";
 
 type SectionType = "hero" | "portfolio" | "contact";
 
@@ -23,6 +24,10 @@ export default function ContentAdminPage() {
   const [requiresAuth, setRequiresAuth] = useState(true);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isDevelopment, setIsDevelopment] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     // Verificar si se requiere autenticación
@@ -116,6 +121,10 @@ export default function ContentAdminPage() {
             result.redeployTriggered ? ". Redeploy iniciado..." : ""
           }`,
         });
+        setToast({
+          message: "Contenido guardado exitosamente",
+          type: "success",
+        });
         if (requiresAuth && editToken) {
           localStorage.setItem("content_edit_token", editToken);
         }
@@ -128,9 +137,17 @@ export default function ContentAdminPage() {
         }
 
         setMessage({ type: "error", text: errorMessage });
+        setToast({
+          message: errorMessage,
+          type: "error",
+        });
       }
     } catch (error) {
       setMessage({ type: "error", text: "Error al guardar contenido" });
+      setToast({
+        message: "Error al guardar contenido",
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -237,6 +254,12 @@ export default function ContentAdminPage() {
                 <HeroEditor
                   content={content as HeroContent}
                   updateContent={updateContent}
+                  onUploadSuccess={() => {
+                    setToast({
+                      message: "Archivo subido correctamente",
+                      type: "success",
+                    });
+                  }}
                 />
               )}
 
@@ -245,6 +268,12 @@ export default function ContentAdminPage() {
                   content={content as PortfolioContent}
                   updateContent={updateContent}
                   updateItem={updatePortfolioItem}
+                  onUploadSuccess={() => {
+                    setToast({
+                      message: "Imagen subida correctamente",
+                      type: "success",
+                    });
+                  }}
                 />
               )}
 
@@ -266,6 +295,14 @@ export default function ContentAdminPage() {
           )}
         </div>
       </div>
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
@@ -274,9 +311,11 @@ export default function ContentAdminPage() {
 function HeroEditor({
   content,
   updateContent,
+  onUploadSuccess,
 }: {
   content: HeroContent;
   updateContent: (field: string, value: any) => void;
+  onUploadSuccess?: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -328,7 +367,8 @@ function HeroEditor({
                     newImages[index] = url;
                     updateContent("images", newImages);
                   }}
-                  label={`Imagen ${index + 1}`}
+                  onUploadSuccess={onUploadSuccess}
+                  label={`Video/Imagen ${index + 1}`}
                 />
               </div>
               <button
@@ -344,16 +384,6 @@ function HeroEditor({
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={() => {
-              const newImages = [...(content.images || []), ""];
-              updateContent("images", newImages);
-            }}
-            className="text-blue-600 hover:text-blue-700 text-sm"
-          >
-            + Agregar imagen/video
-          </button>
         </div>
       </div>
     </div>
@@ -365,10 +395,12 @@ function PortfolioEditor({
   content,
   updateContent,
   updateItem,
+  onUploadSuccess,
 }: {
   content: PortfolioContent;
   updateContent: (field: string, value: any) => void;
   updateItem: (index: number, field: string, value: any) => void;
+  onUploadSuccess?: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -425,6 +457,7 @@ function PortfolioEditor({
                 <ImageUpload
                   value={item.image}
                   onChange={(url) => updateItem(index, "image", url)}
+                  onUploadSuccess={onUploadSuccess}
                   label="Imagen"
                   className="mb-2"
                 />
