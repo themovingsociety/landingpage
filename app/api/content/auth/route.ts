@@ -5,9 +5,13 @@ export async function GET(request: NextRequest) {
     const tokenConfigured = !!process.env.CONTENT_EDIT_TOKEN;
     const isDevelopment = process.env.NODE_ENV === "development";
 
+    // En producción, siempre requerir auth manual si el token está configurado
+    // En desarrollo, si el token está configurado, no requiere auth manual
+    const requiresAuth = isDevelopment ? !tokenConfigured : true;
+
     return NextResponse.json({
       tokenConfigured,
-      requiresAuth: !tokenConfigured,
+      requiresAuth,
       isDevelopment,
     });
   } catch (error) {

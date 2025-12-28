@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { HeroContent, PortfolioContent, ContactContent } from "@/types/cms";
+import type {
+  HeroContent,
+  PortfolioContent,
+  ContactContent,
+} from "@/types/cms";
 
 type SectionType = "hero" | "portfolio" | "contact";
 
@@ -10,10 +14,14 @@ export default function ContentAdminPage() {
   const [content, setContent] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [editToken, setEditToken] = useState("");
   const [requiresAuth, setRequiresAuth] = useState(true);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isDevelopment, setIsDevelopment] = useState(false);
 
   useEffect(() => {
     // Verificar si se requiere autenticación
@@ -26,8 +34,15 @@ export default function ContentAdminPage() {
     try {
       const response = await fetch("/api/content/auth");
       const result = await response.json();
-      
-      if (result.tokenConfigured && !result.requiresAuth) {
+
+      setIsDevelopment(result.isDevelopment || false);
+
+      // Solo en desarrollo, si el token está configurado, no requiere auth manual
+      if (
+        result.isDevelopment &&
+        result.tokenConfigured &&
+        !result.requiresAuth
+      ) {
         setRequiresAuth(false);
         setEditToken("");
       } else {
@@ -97,7 +112,9 @@ export default function ContentAdminPage() {
       if (result.success) {
         setMessage({
           type: "success",
-          text: `Contenido guardado exitosamente${result.redeployTriggered ? ". Redeploy iniciado..." : ""}`,
+          text: `Contenido guardado exitosamente${
+            result.redeployTriggered ? ". Redeploy iniciado..." : ""
+          }`,
         });
         if (requiresAuth && editToken) {
           localStorage.setItem("content_edit_token", editToken);
@@ -134,7 +151,9 @@ export default function ContentAdminPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
           <p className="mt-4 text-gray-600">
-            {checkingAuth ? "Verificando configuración..." : "Cargando contenido..."}
+            {checkingAuth
+              ? "Verificando configuración..."
+              : "Cargando contenido..."}
           </p>
         </div>
       </div>
@@ -146,7 +165,7 @@ export default function ContentAdminPage() {
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-3xl font-bold mb-4">Editor de Contenido</h1>
-          
+
           {/* Token Input - Solo mostrar si se requiere autenticación */}
           {requiresAuth && (
             <div className="mb-6">
@@ -166,10 +185,11 @@ export default function ContentAdminPage() {
             </div>
           )}
 
-          {!requiresAuth && (
+          {!requiresAuth && isDevelopment && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                ✓ Modo desarrollo: El token se usa automáticamente desde las variables de entorno
+                ✓ Modo desarrollo: El token se usa automáticamente desde las
+                variables de entorno
               </p>
             </div>
           )}
@@ -346,7 +366,10 @@ function PortfolioEditor({
         </label>
         <div className="space-y-4">
           {content.items.map((item, index) => (
-            <div key={item.id} className="border border-gray-200 p-4 rounded-md">
+            <div
+              key={item.id}
+              className="border border-gray-200 p-4 rounded-md"
+            >
               <h4 className="font-semibold mb-2">Item {index + 1}</h4>
               <div className="space-y-2">
                 <input
@@ -451,4 +474,3 @@ function ContactEditor({
     </div>
   );
 }
-

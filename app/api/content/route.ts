@@ -85,7 +85,22 @@ export async function PUT(request: NextRequest) {
 
         // Escribir el archivo JSON
         const filePath = join(process.cwd(), "content", `${section}.json`);
-        await writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+        try {
+            await writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+        } catch (writeError) {
+            // En producción (Vercel), el filesystem puede ser de solo lectura
+            // Los cambios deben hacerse via Git y redeploy
+            if (process.env.NODE_ENV === "production") {
+                return NextResponse.json(
+                    {
+                        error: "Cannot write to filesystem in production. Changes must be made via Git and redeploy.",
+                        requiresRedeploy: true
+                    },
+                    { status: 503 }
+                );
+            }
+            throw writeError;
+        }
 
         // Opcional: Trigger redeploy automático si está configurado
         const autoRedeploy = process.env.AUTO_REDEPLOY === "true";
@@ -98,12 +113,12 @@ export async function PUT(request: NextRequest) {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${expectedToken || ""}`,
                     },
-        }).catch(() => {
-          // Error silencioso por seguridad
-        });
-      } catch {
-        // Error silencioso por seguridad
-      }
+                }).catch(() => {
+                    // Error silencioso por seguridad
+                });
+            } catch {
+                // Error silencioso por seguridad
+            }
         }
 
         return NextResponse.json({
@@ -112,6 +127,25 @@ export async function PUT(request: NextRequest) {
             redeployTriggered: autoRedeploy,
         });
     } catch (error) {
+        // Log del error para debugging (solo en servidor, no se expone al cliente)
+        if (process.env.NODE_ENV === "development") {
+            console.error("Error updating content:", error);
+        }
+
+        // Determinar el tipo de error
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+        // Si es un error de escritura de archivo, dar mensaje específico
+        if (errorMessage.includes("EACCES") || errorMessage.includes("EROFS") || errorMessage.includes("read-only")) {
+            return NextResponse.json(
+                {
+                    error: "Filesystem is read-only. In production, content changes require a Git commit and redeploy.",
+                    requiresRedeploy: true
+                },
+                { status: 503 }
+            );
+        }
+
         return NextResponse.json(
             { error: "Failed to update content" },
             { status: 500 }
