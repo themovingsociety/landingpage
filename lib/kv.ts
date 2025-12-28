@@ -25,19 +25,27 @@ async function getRedisClient() {
         throw new Error("Vercel KV not configured");
     }
 
-    // Para Vercel KV, usar las variables de entorno REST API
-    const url = process.env.KV_REST_API_URL;
-    const token = process.env.KV_REST_API_TOKEN;
+    let url: string | undefined;
+    let password: string | undefined;
 
-    if (!url || !token) {
-        throw new Error("KV_REST_API_URL and KV_REST_API_TOKEN must be set");
+    if (process.env.DATABASE_REDIS_URL) {
+        url = process.env.DATABASE_REDIS_URL;
+    } else if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+        url = process.env.KV_REST_API_URL;
+        password = process.env.KV_REST_API_TOKEN;
     }
 
-    // Crear cliente Redis con autenticación
-    redisClient = createClient({
-        url: url,
-        password: token,
-    });
+    if (!url) {
+        throw new Error("DATABASE_REDIS_URL or KV_REST_API_URL must be set");
+    }
+
+    // Crear cliente Redis
+    const clientOptions: { url: string; password?: string } = { url };
+    if (password) {
+        clientOptions.password = password;
+    }
+
+    redisClient = createClient(clientOptions);
 
     redisClient.on("error", (err) => {
         console.error("Redis Client Error", err);
@@ -89,9 +97,10 @@ export async function saveContentToKV<T>(
  * Verificar si KV está configurado
  */
 export function isKVConfigured(): boolean {
+    // Soporta ambos formatos: DATABASE_REDIS_URL (nuevo) o KV_REST_API_URL (legacy)
     return !!(
-        process.env.KV_REST_API_URL &&
-        process.env.KV_REST_API_TOKEN
+        process.env.DATABASE_REDIS_URL ||
+        (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
     );
 }
 
