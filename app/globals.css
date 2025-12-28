@@ -19,6 +19,10 @@
       sans-serif;
   }
 
+  body.admin-page {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+
   a {
     @apply text-inherit no-underline;
   }
