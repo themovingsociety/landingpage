@@ -85,11 +85,9 @@ async function readJsonFile<T>(filename: string): Promise<T | null> {
   }
 }
 
-// Función principal para obtener contenido
-// Prioriza Vercel KV, luego archivos JSON, finalmente contenido por defecto
+
 export async function getContent(): Promise<SiteContent> {
   try {
-    // Intentar obtener desde KV si está configurado
     if (isKVConfigured()) {
       const [heroKV, portfolioKV, contactKV] = await Promise.all([
         getContentFromKV<HeroContent>('hero'),
@@ -107,7 +105,6 @@ export async function getContent(): Promise<SiteContent> {
       }
     }
 
-    // Fallback a archivos JSON
     const [hero, portfolio, contact] = await Promise.all([
       readJsonFile<HeroContent>('hero.json'),
       readJsonFile<PortfolioContent>('portfolio.json'),

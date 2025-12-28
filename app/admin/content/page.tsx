@@ -372,7 +372,7 @@ function PortfolioEditor({
           Items del Portfolio
         </label>
         <div className="space-y-4">
-          {content.items.map((item, index) => (
+          {content?.items?.map((item, index) => (
             <div
               key={item.id}
               className="border border-gray-200 p-4 rounded-md"
