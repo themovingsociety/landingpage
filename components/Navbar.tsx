@@ -58,7 +58,7 @@ export default function Navbar({
                   return (
                     <span key={index}>
                       {part}
-                      <span className="font-semibold">Moving</span>
+                      <span className="">Moving</span>
                     </span>
                   );
                 } else {
